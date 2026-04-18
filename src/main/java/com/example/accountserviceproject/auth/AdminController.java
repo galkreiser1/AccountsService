@@ -1,5 +1,6 @@
 package com.example.accountserviceproject.auth;
 
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,11 @@ public class AdminController {
     @DeleteMapping("/user/{email}")
     public DeleteUserResponse deleteUser(@PathVariable String email){
         return adminService.deleteUser(email);
+    }
+
+    @PutMapping("/user/role")
+    public SignupResponse updateUserRole(@Valid @RequestBody RoleChangeRequest request) {
+        return adminService.changeRole(request);
     }
 
 
