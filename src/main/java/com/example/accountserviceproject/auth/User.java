@@ -25,6 +25,15 @@ public class User {
     @ElementCollection(fetch = FetchType.EAGER)
     private Set<String> roles = new HashSet<>();
 
+    public User(){}
+
+    public User(String name, String lastname, String email, String password) {
+        this.name = name;
+        this.lastname = lastname;
+        this.email = email;
+        this.password = password;
+    }
+
     public void setId(Long id) {
         this.id = id;
     }
