@@ -17,14 +17,15 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyService passwordPolicyService;
+    private final SecurityEventService securityEventService;
 
     public record ChangePasswordResponse(String email, String status) {}
 
-    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, PasswordPolicyService passwordPolicyService) {
+    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, PasswordPolicyService passwordPolicyService, SecurityEventService securityEventService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.passwordPolicyService = passwordPolicyService;
-
+        this.securityEventService = securityEventService;
     }
 
     @PostMapping("/signup")
@@ -53,6 +54,8 @@ public class AuthController {
 
         userRepository.save(user);
 
+        securityEventService.log("CREATE_USER", "Anonymous", user.getEmail(), "/api/auth/signup");
+
         return new SignupResponse(user.getId(), user.getName(), user.getLastname(), user.getEmail(), user.getRoles());
 
 
@@ -75,6 +78,8 @@ public class AuthController {
 
         user.setPassword(passwordEncoder.encode(request.getNew_password()));
         userRepository.save(user);
+
+        securityEventService.log("CHANGE_PASSWORD", user.getEmail(), user.getEmail(), "/api/auth/changepass");
 
         return new ChangePasswordResponse(
                 user.getEmail(),

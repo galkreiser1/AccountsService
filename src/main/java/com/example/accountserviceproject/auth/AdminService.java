@@ -1,6 +1,7 @@
 package com.example.accountserviceproject.auth;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -11,15 +12,17 @@ import java.util.Set;
 public class AdminService {
 
     private final UserRepository userRepository;
+    private final SecurityEventService securityEventService;
 
     private static final String GRANT = "GRANT";
     private static final String REMOVE = "REMOVE";
     private static final Set<String> VALID_OPERATIONS = Set.of(GRANT, REMOVE);
 
-    private static final Set<String> VALID_ROLES = Set.of("USER", "ACCOUNTANT", "ADMINISTRATOR");
+    private static final Set<String> VALID_ROLES = Set.of("USER", "ACCOUNTANT", "ADMINISTRATOR", "AUDITOR");
 
-    public AdminService(UserRepository userRepository) {
+    public AdminService(UserRepository userRepository, SecurityEventService securityEventService) {
         this.userRepository = userRepository;
+        this.securityEventService = securityEventService;
     }
 
     public List<SignupResponse> getAllUsers() {
@@ -35,7 +38,7 @@ public class AdminService {
                 .toList();
     }
 
-    public DeleteUserResponse deleteUser(String email) {
+    public DeleteUserResponse deleteUser(String email, Authentication authentication) {
         User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
@@ -44,10 +47,22 @@ public class AdminService {
         }
 
         userRepository.delete(user);
+
+        logDeleteUser(email, authentication);
+
         return new DeleteUserResponse(user.getEmail(), "Deleted successfully!");
     }
 
-    public SignupResponse changeRole(RoleChangeRequest request) {
+    private void logDeleteUser(String email, Authentication authentication) {
+        securityEventService.log(
+                "DELETE_USER",
+                authentication.getName(),
+                email,
+                "/api/admin/user"
+        );
+    }
+
+    public SignupResponse changeRole(RoleChangeRequest request, Authentication authentication) {
 
         if (!VALID_ROLES.contains(request.getRole())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role!");
@@ -64,7 +79,23 @@ public class AdminService {
         } else {
             removeRoleFromUser(user, "ROLE_" + request.getRole());
         }
+
+        logRoleChange(request, authentication, user);
+
         return new SignupResponse(user.getId(), user.getName(), user.getLastname(), user.getEmail(), user.getRoles());
+    }
+
+    private void logRoleChange(RoleChangeRequest request, Authentication authentication, User user) {
+        String object = request.getOperation().equals(GRANT)
+                ? "Grant role " + request.getRole() + " to " + user.getEmail()
+                : "Remove role " + request.getRole() + " from " + user.getEmail();
+
+        securityEventService.log(
+                request.getOperation() + "_ROLE",
+                authentication.getName(),
+                object,
+                "/api/admin/user/role"
+        );
     }
 
     private void addRoleToUser(User user, String role) {
