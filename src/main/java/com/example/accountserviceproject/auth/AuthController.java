@@ -1,5 +1,10 @@
 package com.example.accountserviceproject.auth;
 
+
+import com.example.accountserviceproject.audit.SecurityEventService;
+import com.example.accountserviceproject.user.SignupResponse;
+import com.example.accountserviceproject.user.User;
+import com.example.accountserviceproject.user.UserRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
