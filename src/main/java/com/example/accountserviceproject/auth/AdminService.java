@@ -17,6 +17,7 @@ public class AdminService {
     private static final String GRANT = "GRANT";
     private static final String REMOVE = "REMOVE";
     private static final Set<String> VALID_OPERATIONS = Set.of(GRANT, REMOVE);
+    private static final Set<String> VALID_LOCK_OPERATIONS = Set.of("LOCK", "UNLOCK");
 
     private static final Set<String> VALID_ROLES = Set.of("USER", "ACCOUNTANT", "ADMINISTRATOR", "AUDITOR");
 
@@ -123,4 +124,49 @@ public class AdminService {
         user.getRoles().remove(role);
         userRepository.save(user);
     }
+
+    public StatusResponse lockOperation(String email, String operation, Authentication authentication){
+
+        if (!VALID_LOCK_OPERATIONS.contains(operation)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid operation!");
+        }
+
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (user.getRoles().contains("ROLE_ADMINISTRATOR")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot lock/unlock an admin user");
+        }
+
+        if (operation.equals("LOCK")) {
+            lockUser(user, authentication.getName());
+        } else {
+            unlockUser(user, authentication.getName());
+        }
+
+        String status = operation.equals("LOCK") ? "locked" : "unlocked";
+        return new StatusResponse(email + " " + status + " successfully!");
+
+    }
+
+    private void lockUser(User user, String adminEmail) {
+        user.setAccountLocked(true);
+        userRepository.save(user);
+        securityEventService.log(
+                "LOCK_USER",
+                adminEmail,
+                user.getEmail(),
+                "/api/admin/user/access");
+    }
+
+        private void unlockUser(User user, String adminEmail) {
+            user.setAccountLocked(false);
+            user.setFailedAttempts(0);
+            userRepository.save(user);
+            securityEventService.log(
+                    "UNLOCK_USER",
+                    adminEmail,
+                    user.getEmail(),
+                    "/api/admin/user/access");
+        }
 }

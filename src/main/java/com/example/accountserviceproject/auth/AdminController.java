@@ -31,6 +31,11 @@ public class AdminController {
         return adminService.changeRole(request, authentication);
     }
 
+    @PutMapping("/user/access")
+    public StatusResponse changeUserAccess(@Valid @RequestBody UserAccessRequest request, Authentication authentication) {
+        return adminService.lockOperation(request.getUser(), request.getOperation(), authentication);
+    }
+
 
 
 

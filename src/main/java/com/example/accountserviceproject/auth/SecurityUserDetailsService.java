@@ -31,6 +31,7 @@ public class SecurityUserDetailsService implements UserDetailsService {
                 .username(user.getEmail())
                 .password(user.getPassword())
                 .authorities(authorities)
+                .accountLocked(user.isAccountLocked())
                 .build();
     }
 }
