@@ -34,6 +34,18 @@ The code is grouped by domain rather than kept in one package:
 - `user` for the user model and repository
 - `common` for shared responses and exception handling
 
+## API Overview
+
+The API is split into a few main areas:
+
+- `/api/auth/*` for signup and password changes
+- `/api/empl/*` for employee payroll lookup
+- `/api/acct/*` for accountant payroll management
+- `/api/admin/*` for user, role, and access administration
+- `/api/security/*` for audit event access
+
+For the full endpoint list, see [docs/api.md](docs/api.md).
+
 ## Running Locally
 
 The app runs on port `28852` and is configured for HTTPS.
