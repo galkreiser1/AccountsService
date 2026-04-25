@@ -114,6 +114,23 @@ class SecurityEventsMockMvcTest {
         assertEquals("/api/admin/user/access", event.getPath());
     }
 
+    @Test
+    void securityEventsEndpoint_isAuditorOnly() throws Exception {
+        signupUser(ADMIN);
+        signupUser(EMPLOYEE);
+
+        mockMvc.perform(get("/api/security/events")
+                        .with(httpBasic(ADMIN.getEmail(), ADMIN.getPassword())))
+                .andExpect(status().isForbidden());
+
+        changeUserRole(ADMIN, EMPLOYEE.getEmail(), "AUDITOR", "GRANT")
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/security/events")
+                        .with(httpBasic(EMPLOYEE.getEmail(), EMPLOYEE.getPassword())))
+                .andExpect(status().isOk());
+    }
+
     private ResultActions signupUser(User user) throws Exception {
         return mockMvc.perform(post("/api/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -152,6 +169,19 @@ class SecurityEventsMockMvcTest {
                             "operation": "%s"
                         }
                         """.formatted(userEmail, operation)));
+    }
+
+    private ResultActions changeUserRole(User admin, String userEmail, String role, String operation) throws Exception {
+        return mockMvc.perform(put("/api/admin/user/role")
+                .with(httpBasic(admin.getEmail(), admin.getPassword()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "user": "%s",
+                            "role": "%s",
+                            "operation": "%s"
+                        }
+                        """.formatted(userEmail, role, operation)));
     }
 
     private SecurityEvent lastSecurityEvent() {
